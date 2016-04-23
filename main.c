@@ -2,18 +2,27 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-/*
-  In case you're wondering, dgemm stands for Double-precision, GEneral
-  Matrix-Matrix multiplication.
-*/
 
-/*
-  A is M-by-K
-  B is K-by-N
-  C is M-by-N
 
-  lda is the leading dimension of the matrix (the M of square_dgemm).
-*/
+void square_dgemm_basic (const unsigned M, const double *A, const double *B, double *C)
+{
+  unsigned i, j, k;
+
+  for (i = 0; i < M; ++i) {
+       for (j = 0; j < M; ++j) {
+            const double *Ai_ = A + i;
+            const double *B_j = B + j*M;
+
+            double cij = *(C + j*M + i);
+
+            for (k = 0; k < M; ++k) {
+                 cij += *(Ai_ + k*M) * *(B_j + k);
+            }
+
+            *(C + j*M + i) = cij;
+       }
+  }
+}
 
 void
 basic_dgemm (const unsigned lda,
@@ -44,13 +53,12 @@ basic_dgemm (const unsigned lda,
   }
 }
 
-/* You'll definitely change this... */
-/*#define BLOCK_SIZE ((unsigned) 5) */
+#define BLOCK_SIZE ((unsigned) 16)
 
 void
 do_block (const unsigned lda,
           const double *A, const double *B, double *C,
-          const unsigned i, const unsigned j, const unsigned k, int BLOCK_SIZE)
+          const unsigned i, const unsigned j, const unsigned k)
 {
      /*
        Remember that you need to deal with the fringes in each
@@ -79,39 +87,37 @@ do_block (const unsigned lda,
                   A + i + k*lda, B + k + j*lda, C + i + j*lda);
 }
 
-void
-square_dgemm (const unsigned M, 
-              const double *A, const double *B, double *C, int bs)
+void square_dgemm_block (const unsigned M, const double *A, const double *B, double *C)
 {
-     const unsigned n_blocks = M / bs + (M%bs? 1 : 0);
+     const unsigned n_blocks = M / BLOCK_SIZE + (M%BLOCK_SIZE? 1 : 0);
      unsigned bi, bj, bk;
 
      for (bi = 0; bi < n_blocks; ++bi) {
-          const unsigned i = bi * bs;
+          const unsigned i = bi * BLOCK_SIZE;
           
           for (bj = 0; bj < n_blocks; ++bj) {
-               const unsigned j = bj * bs;
+               const unsigned j = bj * BLOCK_SIZE;
 
                for (bk = 0; bk < n_blocks; ++bk) {
-                    const unsigned k = bk * bs;
+                    const unsigned k = bk * BLOCK_SIZE;
                     
-                    do_block (M, A, B, C, i, j, k,bs);
+                    do_block (M, A, B, C, i, j, k);
                }
           }
      }
 }
 
-
-
 int main(int argc, char *argv[])
 {
   int N = atoi(argv[1]);
-  int block_size = atoi(argv[2]);
   double *A = (double *)malloc(N * N * sizeof(double));
   double *B = (double *)malloc(N * N * sizeof(double));
-  double *C = (double *)malloc(N * N * sizeof(double));
+  double *C1 = (double *)malloc(N * N * sizeof(double));
+  double *C2 = (double *)malloc(N * N * sizeof(double));
   unsigned i, j;
-  
+
+  /* You'll definitely change this... */
+
   int seed = time(NULL);
   srand(seed);
 
@@ -122,16 +128,21 @@ int main(int argc, char *argv[])
     }
   }
 
- 
+  clock_t t1;
+  t1 = clock();
+  square_dgemm_basic(N,A,B,C1);
+  t1 = clock() - t1;
+  double time_taken1 = ((double)t1)/CLOCKS_PER_SEC;
+  double perf1 = 2*pow((double)N,3)/time_taken1;
 
-  clock_t t;
-  t = clock();
-  square_dgemm(N,A,B,C,block_size);
-  t = clock() - t;
-  double time_taken = ((double)t)/CLOCKS_PER_SEC;
+  clock_t t2;
+  t2 = clock();
+  square_dgemm_block(N,A,B,C2);
+  t2 = clock() - t2;
+  double time_taken2 = ((double)t2)/CLOCKS_PER_SEC;
+  double perf2 = 2*pow((double)N,3)/time_taken2;
 
-  double perf = 2*pow((double)N,3)/time_taken;
-  printf("%d,%d,%f\n",block_size, N, perf);
+  printf("%f,%f\n",perf1,perf2);
 
   return 0;
 }
