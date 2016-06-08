@@ -1,4 +1,9 @@
 function [U, S, V]= randSVD_SI(A,k,l,q,useLU)
+%inputs: A is a m,n matrix
+%        k the target rank
+%        l the interger to specify the number of column for a random
+%         start matrix , l>=k
+%        q number of iteration for power methods
 [m, n] = size(A);
 if m < n,
     disp('The input matrix should have number of rows m larger than or equal to number of column n');
@@ -41,4 +46,4 @@ U = Q*W;
 U = U(:,1:k);
 S = S(1:k,1:k);
 V=V(:,1:k);
-%Ak = U*S*V;
+%Ak = U*S*V';

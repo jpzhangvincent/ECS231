@@ -1,4 +1,10 @@
 function [U, S, V]= randSVD_impOS(A,k,q,p,c,useLU)
+%inputs: A is a m,n matrix
+%        k the target rank
+%        p the interger that remains in control of failure chance, k+p=l
+%        c the integer that allows a drastically different error bound, 
+%           controls accuracy, 
+%        q number of iteration for power methods
 [m, n] = size(A);
 if m < n,
     disp('The input matrix should have number of rows m larger than or equal to number of column n');

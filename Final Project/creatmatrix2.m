@@ -1,5 +1,5 @@
 function [A, X, Y] = creatmatrix2(n,r,c)
-% e.g creatmatrix2(200,10,10) ouputs 20,8 matrix
+% e.g creatmatrix2(200,10,10) ouputs 10,10 matrix
 X = [];
 Y = [];
 A = [];
